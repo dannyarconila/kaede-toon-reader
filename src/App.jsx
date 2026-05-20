@@ -109,43 +109,45 @@ export default function ComicWebsite() {
         {/* HEADER */}
         <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur">
 
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4">
 
-            <div className="flex items-center gap-4">
+  {/* TOP ROW */}
+  <div className="flex items-center justify-between gap-3">
 
-  <button
-    onClick={() =>
-      setSelectedChapter(null)
-    }
-    className="rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-6 py-3 font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40"
-  >
-    ← Back
-  </button>
+    <button
+      onClick={() =>
+        setSelectedChapter(null)
+      }
+      className="rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40 sm:px-6 sm:text-lg"
+    >
+      ← Back
+    </button>
+
+    <button
+      onClick={() => {
+        setSelectedChapter(null);
+        setSelectedSeries(null);
+      }}
+      className="rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40 sm:px-6 sm:text-lg"
+    >
+      🏠 Home
+    </button>
+
+  </div>
+
+  {/* TITLE */}
+  <h1 className="mx-auto max-w-[90%] text-center text-2xl font-black leading-tight text-white sm:text-5xl">
+
+    {selectedChapter.title}
+
+  </h1>
 
 </div>
-
-<h1 className="absolute left-1/2 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">
-
-  {selectedChapter.title}
-
-</h1>
-
-<button
-  onClick={() => {
-    setSelectedChapter(null);
-    setSelectedSeries(null);
-  }}
-  className="rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-6 py-3 font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40"
->
-  🏠 Home
-</button>
-
-          </div>
 
         </header>
 
         {/* READER */}
-        <main className="mx-auto max-w-5xl px-3 py-10">
+        <main className="mx-auto max-w-6xl px-2 py-6 sm:px-3 sm:py-10">
 
           <div className="space-y-8">
 
