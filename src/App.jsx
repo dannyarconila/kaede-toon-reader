@@ -109,7 +109,7 @@ export default function ComicWebsite() {
         {/* HEADER */}
         <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur">
 
-          <div className="mx-auto flex max-w-7xl items-center justify-between p-5">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
 
             <div className="flex items-center gap-4">
 
@@ -124,7 +124,7 @@ export default function ComicWebsite() {
 
 </div>
 
-<h1 className="absolute left-1/2 -translate-x-1/2 text-5xl font-black tracking-tight text-white">
+<h1 className="absolute left-1/2 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">
 
   {selectedChapter.title}
 
