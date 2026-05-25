@@ -8,353 +8,1669 @@ import { db } from "./firebase";
 import {
   collection,
   getDocs,
-  query,
-  where,
 } from "firebase/firestore";
 
-export default function ComicWebsite() {
+import { QRCodeCanvas } from "qrcode.react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
-  const [seriesList, setSeriesList] =
-    useState([]);
-
-  const [selectedSeries, setSelectedSeries] =
-    useState(null);
-
-  const [selectedChapter, setSelectedChapter] =
-    useState(null);
-
-  const [chapters, setChapters] =
-    useState([]);
+export default function App() {
 
   // =========================
-  // LOAD SERIES
+  // STATES
+  // =========================
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+  
+  const [showSignupModal, setShowSignupModal] =
+  useState(false);
+
+const [isLoggedIn, setIsLoggedIn] =
+  useState(
+    localStorage.getItem("loggedIn") ===
+      "true"
+  );
+
+const [username, setUsername] =
+  useState("");
+
+const [password, setPassword] =
+  useState("");
+
+const [signupName, setSignupName] =
+  useState("");
+
+const [signupPosition, setSignupPosition] =
+  useState("");
+
+const [signupUsername, setSignupUsername] =
+  useState("");
+
+const [signupPassword, setSignupPassword] =
+  useState("");
+
+  const [searchTerm, setSearchTerm] =
+    useState("");
+
+  const [inventoryItems, setInventoryItems] =
+    useState([]);
+
+  const [profileName, setProfileName] =
+    useState(
+      localStorage.getItem("profileName") || ""
+    );
+
+  const [profilePosition, setProfilePosition] =
+    useState(
+      localStorage.getItem("profilePosition") || ""
+    );
+
+  const [showLogoutModal, setShowLogoutModal] =
+    useState(false);
+
+  const [showAlertModal, setShowAlertModal] =
+  useState(false);
+
+const [alertMessage, setAlertMessage] =
+  useState("");
+
+  const [categories] = useState([
+    {
+      id: 1,
+      name: "All Items",
+      icon: "📦",
+    },
+    {
+      id: 2,
+      name: "Brewhouse/RMH",
+      icon: "🏭",
+    },
+    {
+      id: 3,
+      name: "Filtration/Cellars",
+      icon: "🧪",
+    },
+    {
+      id: 4,
+      name: "Eng'g PNS",
+      icon: "🛠️",
+    },
+    {
+      id: 5,
+      name: "WTP",
+      icon: "💧",
+    },
+    {
+      id: 6,
+      name: "WWTP",
+      icon: "♻️",
+    },
+  ]);
+
+  const [selectedCategory, setSelectedCategory] =
+    useState("All Items");
+
+  const [showQRModal, setShowQRModal] =
+  useState(false);
+
+const [qrItemName, setQrItemName] =
+  useState("");
+
+const [qrCategory, setQrCategory] =
+  useState("");
+
+const [qrPartNumber, setQrPartNumber] =
+  useState("");
+
+const [generatedQR, setGeneratedQR] =
+  useState(null);
+
+const [showScannerModal, setShowScannerModal] =
+  useState(false);
+
+const [scannedItem, setScannedItem] =
+  useState(null);
+
+const [scanAction, setScanAction] =
+  useState("");
+
+const [scanQuantity, setScanQuantity] =
+  useState(1);
+
+  // =========================
+  // LOAD INVENTORY
   // =========================
   useEffect(() => {
 
-    loadSeries();
+    loadInventory();
 
   }, []);
 
-  const loadSeries = async () => {
+  const loadInventory = async () => {
 
-    const snapshot = await getDocs(
-      collection(db, "series")
-    );
+    try {
 
-    const loaded = [];
+      const snapshot = await getDocs(
+        collection(db, "inventory")
+      );
 
-    snapshot.forEach((doc) => {
+      const loaded = [];
 
-      loaded.push({
-        id: doc.id,
-        ...doc.data(),
+      snapshot.forEach((doc) => {
+
+        loaded.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+
       });
 
-    });
+      setInventoryItems(loaded);
 
-    setSeriesList(loaded);
+    } catch (error) {
+
+      console.log(error);
+
+      // SAMPLE DATA
+      setInventoryItems([
+        {
+          id: 1,
+          name: "6204 Bearing",
+          partNumber: "BRG-6204",
+          category: "Brewhouse/RMH",
+          stock: 15,
+          image:
+            "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+        },
+
+        {
+          id: 2,
+          name: "Pressure Gauge",
+          partNumber: "PG-220",
+          category: "Filtration/Cellars",
+          stock: 4,
+          image:
+            "https://cdn-icons-png.flaticon.com/512/2933/2933245.png",
+        },
+
+        {
+          id: 3,
+          name: "Pump Coupling",
+          partNumber: "PMP-101",
+          category: "Eng'g PNS",
+          stock: 8,
+          image:
+            "https://cdn-icons-png.flaticon.com/512/3097/3097144.png",
+        },
+
+        {
+          id: 4,
+          name: "Water Valve",
+          partNumber: "WTP-505",
+          category: "WTP",
+          stock: 2,
+          image:
+            "https://cdn-icons-png.flaticon.com/512/296/296216.png",
+        },
+
+        {
+          id: 5,
+          name: "Waste Pump",
+          partNumber: "WWTP-900",
+          category: "WWTP",
+          stock: 11,
+          image:
+            "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+        },
+      ]);
+
+    }
 
   };
 
   // =========================
-  // LOAD CHAPTERS
+  // FILTER ITEMS
   // =========================
-  useEffect(() => {
+  const filteredItems =
+    inventoryItems.filter((item) => {
 
-    if (!selectedSeries) return;
+      const matchesSearch =
+        item.name
+          ?.toLowerCase()
+          .includes(
+            searchTerm.toLowerCase()
+          ) ||
 
-    loadChapters();
+        item.partNumber
+          ?.toLowerCase()
+          .includes(
+            searchTerm.toLowerCase()
+          );
 
-  }, [selectedSeries]);
+      const matchesCategory =
+        selectedCategory ===
+          "All Items" ||
 
-  const loadChapters = async () => {
+        item.category ===
+          selectedCategory;
 
-    const q = query(
-      collection(db, "chapters"),
-
-      where(
-        "seriesId",
-        "==",
-        selectedSeries.id
-      )
-    );
-
-    const snapshot =
-      await getDocs(q);
-
-    const loaded = [];
-
-    snapshot.forEach((doc) => {
-
-      loaded.push({
-        id: doc.id,
-        ...doc.data(),
-      });
+      return (
+        matchesSearch &&
+        matchesCategory
+      );
 
     });
 
-    setChapters(loaded);
+    useEffect(() => {
 
-  };
+  if (showScannerModal) {
 
-  // =========================
-  // READER PAGE
-  // =========================
-  if (selectedSeries && selectedChapter) {
+    const scanner =
+      new Html5QrcodeScanner(
+        "reader",
+        {
+          fps: 10,
+          qrbox: 250,
+        },
+        false
+      );
 
-    return (
+    scanner.render(
 
-      <div className="min-h-screen bg-black text-white">
+      (decodedText) => {
 
-        {/* HEADER */}
-        <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur">
+        try {
 
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4">
+          const parsed =
+            JSON.parse(
+              decodedText
+            );
 
-  {/* TOP ROW */}
-  <div className="flex items-center justify-between gap-3">
+          setScannedItem(
+            parsed
+          );
 
-    <button
-      onClick={() =>
-        setSelectedChapter(null)
-      }
-      className="rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40 sm:px-6 sm:text-lg"
-    >
-      ← Back
-    </button>
+          scanner.clear();
 
-    <button
-      onClick={() => {
-        setSelectedChapter(null);
-        setSelectedSeries(null);
-      }}
-      className="rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40 sm:px-6 sm:text-lg"
-    >
-      🏠 Home
-    </button>
+        } catch (err) {
 
-  </div>
+          console.log(err);
 
-  {/* TITLE */}
-  <h1 className="mx-auto max-w-[90%] text-center text-2xl font-black leading-tight text-white sm:text-5xl">
+        }
 
-    {selectedChapter.title}
+      },
 
-  </h1>
-
-</div>
-
-        </header>
-
-        {/* READER */}
-        <main className="mx-auto max-w-6xl px-2 py-6 sm:px-3 sm:py-10">
-
-          <div className="space-y-8">
-
-            {(selectedChapter.pages ||
-              []
-            ).map((page, index) => (
-
-              <div
-                key={index}
-                className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
-              >
-
-                <img
-                  src={page}
-                  className="w-full"
-                  loading="lazy"
-                />
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </main>
-
-      </div>
+      () => {}
 
     );
 
   }
 
-  // =========================
-  // SERIES PAGE
-  // =========================
-  if (selectedSeries) {
+}, [showScannerModal]);
 
-    return (
+  return (
 
-      <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white">
+      {!isLoggedIn && (
 
-        {/* HEADER */}
-        <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/80 backdrop-blur">
+  <div className="flex min-h-screen items-center justify-center bg-black p-4">
 
-          <div className="mx-auto flex max-w-6xl items-center justify-between p-4">
+    <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
 
+      {/* LOGO */}
+      <div className="mb-8 text-center">
+
+        <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-br from-pink-500 to-violet-600 text-5xl">
+
+          🏭
+
+        </div>
+
+        <h1 className="text-4xl font-black">
+
+          BREWERY IMS
+
+        </h1>
+
+        <p className="mt-2 text-zinc-400">
+
+          Inventory Management System
+
+        </p>
+
+      </div>
+
+      {/* USERNAME */}
+      <div className="mb-4">
+
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) =>
+            setUsername(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none focus:border-pink-500"
+        />
+
+      </div>
+
+      {/* PASSWORD */}
+      <div className="mb-6">
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) =>
+            setPassword(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none focus:border-pink-500"
+        />
+
+      </div>
+
+      {/* LOGIN */}
+      <button
+        onClick={() => {
+
+          const savedUser =
+            localStorage.getItem(
+              "user"
+            );
+
+          if (!savedUser) {
+
+           setAlertMessage(
+  "No account found. Please sign up first."
+);
+
+setShowAlertModal(true);
+
+            return;
+
+          }
+
+          const parsed =
+            JSON.parse(savedUser);
+
+          if (
+
+  username.trim() ===
+    parsed.username.trim() &&
+
+  password.trim() ===
+    parsed.password.trim()
+
+)
+          
+          {
+
+            localStorage.setItem(
+              "loggedIn",
+              "true"
+            );
+
+            setProfileName(
+              parsed.name
+            );
+
+            setProfilePosition(
+              parsed.position
+            );
+
+            setIsLoggedIn(true);
+
+            
+
+          } else {
+
+            setAlertMessage(
+  "Invalid username or password."
+);
+
+setShowAlertModal(true);
+
+          }
+
+        }}
+        className="mb-4 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black transition hover:scale-[1.02]"
+      >
+
+        LOGIN
+
+      </button>
+
+      {/* SIGNUP */}
+      <button
+        onClick={() =>
+          setShowSignupModal(true)
+        }
+        className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 font-black transition hover:bg-zinc-800"
+      >
+
+        CREATE ACCOUNT
+
+      </button>
+
+    </div>
+
+  </div>
+
+)}
+
+{/* ALERT MODAL */}
+{showAlertModal && (
+
+  <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 p-4">
+
+    <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+
+      <h2 className="mb-4 text-3xl font-black text-white">
+
+        ⚠️ System Message
+
+      </h2>
+
+      <p className="mb-8 text-zinc-300">
+
+        {alertMessage}
+
+      </p>
+
+      <button
+        onClick={() =>
+          setShowAlertModal(false)
+        }
+        className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black text-white transition hover:scale-[1.02]"
+      >
+
+        OK
+
+      </button>
+
+    </div>
+
+  </div>
+
+)}
+
+      
+
+      {/* LOGOUT MODAL */}
+      {showLogoutModal && (
+
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+
+          <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+
+            <h2 className="mb-4 text-3xl font-black">
+
+              🚪 Logout
+
+            </h2>
+
+            <p className="mb-8 text-zinc-400">
+
+              Are you sure you want to logout?
+
+            </p>
+
+            <div className="flex gap-3">
+
+              <button
+                onClick={() => {
+
+                localStorage.removeItem(
+  "loggedIn"
+);
+
+                  window.location.reload();
+
+                }}
+                className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-5 py-4 font-black transition hover:scale-[1.02]"
+              >
+
+                Yes Logout
+
+              </button>
+
+              <button
+                onClick={() =>
+                  setShowLogoutModal(
+                    false
+                  )
+                }
+                className="rounded-2xl bg-zinc-800 px-5 py-4 font-bold transition hover:bg-zinc-700"
+              >
+
+                Cancel
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* SIGNUP MODAL */}
+{showSignupModal && (
+
+  <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+
+    <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8">
+
+      <h2 className="mb-6 text-3xl font-black">
+
+        Create Account
+
+      </h2>
+
+      <div className="space-y-4">
+
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={signupName}
+          onChange={(e) =>
+            setSignupName(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Job Position"
+          value={signupPosition}
+          onChange={(e) =>
+            setSignupPosition(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Username"
+          value={signupUsername}
+          onChange={(e) =>
+            setSignupUsername(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={signupPassword}
+          onChange={(e) =>
+            setSignupPassword(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+      </div>
+
+      <div className="mt-6 flex gap-3">
+
+        <button
+          onClick={() => {
+
+           const userData = {
+
+  name:
+    signupName.trim(),
+
+  position:
+    signupPosition.trim(),
+
+  username:
+    signupUsername.trim(),
+
+  password:
+    signupPassword.trim(),
+
+};
+
+            localStorage.setItem(
+              "user",
+              JSON.stringify(
+                userData
+              )
+            );
+
+            localStorage.setItem(
+  "loggedIn",
+  "true"
+);
+
+localStorage.setItem(
+  "profileName",
+  signupName
+);
+
+localStorage.setItem(
+  "profilePosition",
+  signupPosition
+);
+
+setProfileName(signupName);
+
+setProfilePosition(
+  signupPosition
+);
+
+setUsername(signupUsername);
+
+setPassword(signupPassword);
+
+setIsLoggedIn(true);
+
+           setIsLoggedIn(true);
+
+setShowSignupModal(false);
+
+setSignupName("");
+setSignupPosition("");
+setSignupUsername("");
+setSignupPassword("");
+
+setAlertMessage(
+  "Account created successfully!"
+);
+
+
+setShowAlertModal(true);
+
+
+          }}
+          className="flex-1 rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black"
+        >
+
+          CREATE
+
+        </button>
+
+        <button
+          onClick={() =>
+            setShowSignupModal(
+              false
+            )
+          }
+          className="rounded-2xl bg-zinc-800 px-5 py-4 font-bold"
+        >
+
+          Cancel
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
+
+
+      {isLoggedIn && (
+
+<>
+      {sidebarOpen && (
+
+        <div className="fixed inset-0 z-50 flex">
+
+          <div
+            onClick={() =>
+              setSidebarOpen(false)
+            }
+            className="absolute inset-0 bg-black/70"
+          />
+
+          <div className="relative z-50 h-full w-[280px] border-r border-zinc-800 bg-zinc-950 p-6">
+
+            <h2 className="mb-8 text-3xl font-black">
+
+              BREWERY IMS
+
+            </h2>
+
+            <div className="space-y-4">
+
+              {/* DASHBOARD */}
+              <button
+                onClick={() => {
+
+                  window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                  });
+
+                  setSidebarOpen(false);
+
+                }}
+                className="w-full rounded-2xl bg-gradient-to-r from-pink-500/20 to-violet-500/20 px-5 py-4 text-left text-lg font-bold transition hover:scale-[1.02]"
+              >
+
+                📊 Dashboard
+
+              </button>
+
+              {/* PROFILE */}
+              {/* PROFILE */}
+<button
+  className="w-full rounded-2xl bg-zinc-900 px-5 py-4 text-left text-lg font-bold transition hover:bg-zinc-800"
+>
+
+  👤 {profileName || "User"}
+
+</button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* HEADER */}
+      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-black/95 backdrop-blur">
+
+        <div className="flex items-center gap-4 px-4 py-4">
+
+          {/* HAMBURGER */}
+          <button
+            onClick={() =>
+              setSidebarOpen(true)
+            }
+            className="rounded-2xl border border-zinc-700 bg-zinc-900 p-4 transition hover:bg-zinc-800"
+          >
+
+            ☰
+
+          </button>
+
+          {/* LOGO */}
+          <div className="flex items-center gap-4">
+
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-violet-600 text-3xl shadow-lg shadow-pink-500/20">
+
+              🏭
+
+            </div>
+
+            <div>
+
+              <h1 className="text-2xl font-black tracking-wide text-white sm:text-3xl">
+
+                BREWERY INVENTORY
+
+              </h1>
+
+              <p className="text-sm text-zinc-400">
+
+                Inventory Management System
+
+              </p>
+
+              {profileName && (
+
+                <p className="mt-1 text-xs text-pink-400">
+
+                  {profileName} • {profilePosition}
+
+                </p>
+
+              )}
+
+            </div>
+
+          </div>
+
+          {/* SEARCH + LOGOUT */}
+          <div className="ml-auto flex items-center gap-3">
+
+            {/* SEARCH */}
+            <div className="hidden w-full max-w-2xl md:block">
+
+              <input
+                type="text"
+                placeholder="Search by item name or part number..."
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(
+                    e.target.value
+                  )
+                }
+                className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
+              />
+
+            </div>
+
+            {/* LOGOUT */}
             <button
               onClick={() =>
-                setSelectedSeries(null)
+                setShowLogoutModal(
+                  true
+                )
               }
-              className="rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 px-6 py-3 font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-105 hover:shadow-pink-500/40"
+              className="hidden rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-6 py-4 font-black text-white shadow-lg shadow-red-500/20 transition hover:scale-[1.02] md:block"
             >
-              ← Home
+
+              🚪 Logout
+
             </button>
 
           </div>
 
-        </header>
+        </div>
 
+        {/* MOBILE SEARCH */}
+        <div className="px-4 pb-4 md:hidden">
 
-        {/* CHAPTERS */}
-        <main className="mx-auto max-w-6xl px-6 py-14">
-
-          <div className="mb-10 flex items-center justify-between">
-
-            <h3 className="text-5xl font-bold">
-              Chapters
-            </h3>
-
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
-
-            {chapters.map(
-              (chapter, index) => (
-
-                <div
-  key={index}
-  className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 transition hover:border-zinc-600"
->
-
-  <img
-    src={
-      chapter.pages?.[0] ||
-      selectedSeries.cover
-    }
-    className="h-64 w-full object-cover"
-  />
-
-  <div className="p-8">
-
-    <h4 className="text-3xl font-bold leading-tight text-white">
-      {chapter.title}
-    </h4>
-
-    <p className="mt-3 text-zinc-400">
-      Chapter #{index + 1}
-    </p>
-
-    <button
-      onClick={() =>
-        setSelectedChapter(
-          chapter
-        )
-      }
-      className="mt-8 w-full rounded-3xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 py-5 text-xl font-black text-white shadow-2xl shadow-pink-500/20 transition duration-300 hover:scale-[1.02] hover:shadow-pink-500/40"
-    >
-      Read Chapter
-    </button>
-
-  </div>
-
-</div>
-
+          <input
+            type="text"
+            placeholder="Search inventory..."
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(
+                e.target.value
               )
-            )}
-
-          </div>
-
-        </main>
-
-      </div>
-
-    );
-
-  }
-
-  // =========================
-  // HOME PAGE
-  // =========================
-  return (
-
-    <div className="min-h-screen bg-black text-white">
-
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/95 backdrop-blur">
-
-        <div className="mx-auto flex max-w-7xl items-center justify-between p-4">
-
-          <h1 className="text-4xl font-black tracking-wide">
-            KAEDE TOON
-          </h1>
+            }
+            className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+          />
 
         </div>
 
       </header>
 
-      {/* HOME */}
-      <main className="mx-auto max-w-7xl px-6 py-14">
+      {/* MAIN */}
+      <main className="px-4 py-6">
 
-        <div className="mb-14 flex items-center justify-between">
+        {/* ACTION CARDS */}
+        <div className="grid gap-5 md:grid-cols-2">
 
-          <h2 className="text-6xl font-bold">
-            Comic Series
-          </h2>
+          {/* SCAN */}
+<div
+  onClick={() => {
+    setShowScannerModal(true);
+  }}
+  className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-pink-500/20 to-fuchsia-500/10 p-8 transition hover:border-pink-500 hover:scale-[1.01]"
+>
 
-        </div>
+            <div className="flex items-center justify-between">
 
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+              <div>
 
-          {seriesList.map(
-            (series, index) => (
+                <h2 className="text-3xl font-black">
 
-              <div
-                key={index}
-                onClick={() =>
-                  setSelectedSeries(series)
-                }
-                style={{
-                  touchAction:
-                    "manipulation",
-                }}
-                className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-zinc-800 bg-zinc-900 transition duration-300 hover:-translate-y-2 hover:border-zinc-600"
-              >
+                  Scan QR Code
 
-                <div className="overflow-hidden">
+                </h2>
 
-                  <img
-  src={series.cover}
-  className="h-[260px] w-full object-cover"
-/>
+                <p className="mt-3 text-zinc-300">
 
-                </div>
+                  Scan inventory QR code
+                  to update stock realtime.
 
-                <div className="p-7">
-
-                  <h4 className="text-4xl font-bold leading-tight">
-                    {series.title}
-                  </h4>
-
-                  <p className="mt-4 text-lg text-zinc-400">
-                    Romance, Drama
-                  </p>
-
-                </div>
+                </p>
 
               </div>
 
-            )
-          )}
+              <div className="text-6xl">
+
+                📷
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* GENERATE */}
+<div
+  onClick={() => {
+    setShowQRModal(true);
+    setGeneratedQR(null);
+  }}
+  className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-violet-500/20 to-purple-500/10 p-8 transition hover:border-violet-500 hover:scale-[1.01]"
+>
+
+            <div className="flex items-center justify-between">
+
+              <div>
+
+                <h2 className="text-3xl font-black">
+
+                  Generate QR
+
+                </h2>
+
+                <p className="mt-3 text-zinc-300">
+
+                  Generate printable QR
+                  labels for inventory items.
+
+                </p>
+
+              </div>
+
+              <div className="text-6xl">
+
+                🧾
+
+              </div>
+
+            </div>
+
+          </div>
 
         </div>
 
-      </main>
+        {/* CATEGORIES */}
+        <div className="mt-10">
+
+          <h2 className="mb-5 text-3xl font-black">
+
+            Categories
+
+          </h2>
+
+          <div className="flex gap-4 overflow-x-auto pb-3">
+
+            {categories.map((cat) => (
+
+              <button
+                key={cat.id}
+                onClick={() =>
+                  setSelectedCategory(
+                    cat.name
+                  )
+                }
+                className={`min-w-[220px] rounded-[28px] border p-6 text-left transition ${
+                  selectedCategory ===
+                  cat.name
+                    ? "border-pink-500 bg-pink-500/10"
+                    : "border-zinc-800 bg-zinc-900"
+                }`}
+              >
+
+                <div className="text-5xl">
+
+                  {cat.icon}
+
+                </div>
+
+                <h3 className="mt-5 text-2xl font-bold">
+
+                  {cat.name}
+
+                </h3>
+
+              </button>
+
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* TABLE */}
+        <div className="mt-10 overflow-hidden rounded-[32px] border border-zinc-800 bg-zinc-950">
+
+          <div className="overflow-x-auto">
+
+            <table className="w-full">
+
+              <thead className="border-b border-zinc-800 bg-zinc-900">
+
+                <tr className="text-left text-zinc-400">
+
+                  <th className="px-6 py-5">
+                    ITEM
+                  </th>
+
+                  <th className="px-6 py-5">
+                    PART NUMBER
+                  </th>
+
+                  <th className="px-6 py-5">
+                    CATEGORY
+                  </th>
+
+                  <th className="px-6 py-5">
+                    STOCK
+                  </th>
+
+                  <th className="px-6 py-5">
+                    STATUS
+                  </th>
+
+                  <th className="px-6 py-5">
+                    ACTION
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {filteredItems.map(
+                  (item, index) => (
+
+                    <tr
+                      key={index}
+                      className="border-b border-zinc-800 transition hover:bg-zinc-900"
+                    >
+
+                      <td className="px-6 py-5">
+
+                        <div className="flex items-center gap-4">
+
+                          <img
+                            src={item.image}
+                            className="h-16 w-16 rounded-2xl bg-white object-cover"
+                          />
+
+                          <div>
+
+                            <h3 className="text-lg font-bold">
+
+                              {item.name}
+
+                            </h3>
+
+                            <p className="text-sm text-zinc-400">
+
+                              Inventory Item
+
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </td>
+
+                      <td className="px-6 py-5">
+
+                        {item.partNumber}
+
+                      </td>
+
+                      <td className="px-6 py-5">
+
+                        <span className="rounded-xl bg-orange-500/20 px-4 py-2 text-orange-400">
+
+                          {item.category}
+
+                        </span>
+
+                      </td>
+
+                      <td className="px-6 py-5">
+
+                        <span className="font-bold text-green-400">
+
+                          {item.stock} pcs
+
+                        </span>
+
+                      </td>
+
+                      <td className="px-6 py-5">
+
+                        {item.stock <= 5 ? (
+
+                          <span className="rounded-xl bg-red-500/20 px-4 py-2 text-red-400">
+
+                            Low Stock
+
+                          </span>
+
+                        ) : (
+
+                          <span className="rounded-xl bg-green-500/20 px-4 py-2 text-green-400">
+
+                            In Stock
+
+                          </span>
+
+                        )}
+
+                      </td>
+
+                      <td className="px-6 py-5">
+
+                        <div className="flex gap-3">
+
+                          <button className="rounded-xl bg-zinc-800 px-4 py-2 transition hover:bg-zinc-700">
+
+                            👁
+
+                          </button>
+
+                          <button className="rounded-xl bg-zinc-800 px-4 py-2 transition hover:bg-zinc-700">
+
+                            ✏️
+
+                          </button>
+
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  )
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+          </main>
+
+      </>
+
+)}
+
+{/* QR GENERATOR MODAL */}
+{showQRModal && (
+
+ <div className="fixed inset-0 z-[500] overflow-y-auto bg-black/80 p-4">
+
+   <div className="mx-auto my-10 w-full max-w-lg rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+
+      {/* HEADER */}
+      <div className="mb-8 flex items-center justify-between">
+
+        <div>
+
+          <h2 className="text-3xl font-black">
+
+            Generate QR
+
+          </h2>
+
+          <p className="mt-2 text-zinc-400">
+
+            Create printable inventory QR labels
+
+          </p>
+
+        </div>
+
+        <button
+          onClick={() => {
+            setShowQRModal(false);
+            setGeneratedQR(null);
+          }}
+          className="rounded-2xl bg-zinc-800 px-4 py-3 font-bold transition hover:bg-zinc-700"
+        >
+
+          ✖
+
+        </button>
+
+      </div>
+
+      {/* INPUTS */}
+      <div className="space-y-4">
+
+        {/* ITEM NAME */}
+        <input
+          type="text"
+          placeholder="Item Name"
+          value={qrItemName}
+          onChange={(e) =>
+            setQrItemName(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
+        />
+
+        {/* CATEGORY */}
+        <input
+          type="text"
+          placeholder="Category"
+          value={qrCategory}
+          onChange={(e) =>
+            setQrCategory(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
+        />
+
+        {/* PART NUMBER */}
+        <input
+          type="text"
+          placeholder="Part Number"
+          value={qrPartNumber}
+          onChange={(e) =>
+            setQrPartNumber(
+              e.target.value
+            )
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
+        />
+
+      </div>
+
+      {/* GENERATE BUTTON */}
+      <button
+        onClick={() => {
+
+          setGeneratedQR({
+            itemName: qrItemName,
+            category: qrCategory,
+            partNumber: qrPartNumber,
+          });
+
+        }}
+        className="mt-6 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black transition hover:scale-[1.01]"
+      >
+
+        GENERATE QR CODE
+
+      </button>
+
+      {/* QR RESULT */}
+      {generatedQR && (
+
+        <div className="mt-8 rounded-[32px] border border-zinc-800 bg-black p-8 text-center">
+
+         <div
+  id="qr-print-area"
+  className="inline-block rounded-3xl bg-white p-6"
+>
+
+            <QRCodeCanvas
+              value={JSON.stringify(
+                generatedQR
+              )}
+              size={220}
+            />
+
+            <h3 className="mt-5 text-2xl font-black text-black">
+
+              {generatedQR.itemName}
+
+            </h3>
+
+            <p className="mt-1 text-black">
+
+              {generatedQR.partNumber}
+
+            </p>
+
+            <p className="text-sm text-zinc-600">
+
+              {generatedQR.category}
+
+            </p>
+
+          </div>
+
+          {/* PRINT */}
+          {/* ACTION BUTTONS */}
+<div className="mt-6 flex justify-center gap-3">
+
+  {/* PRINT */}
+  <button
+   onClick={() => {
+
+  const canvas =
+    document.querySelector("canvas");
+
+  const qrImage =
+    canvas.toDataURL("image/png");
+
+  const printWindow =
+    window.open(
+      "",
+      "",
+      "width=900,height=700"
+    );
+
+  printWindow.document.write(`
+    <html>
+
+      <head>
+
+        <title>
+          QR Label
+        </title>
+
+        <style>
+
+          body{
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:white;
+            font-family:Arial;
+          }
+
+          .label{
+            width:320px;
+            border:2px solid black;
+            border-radius:20px;
+            padding:25px;
+            text-align:center;
+          }
+
+          img{
+            width:220px;
+            height:220px;
+            object-fit:contain;
+          }
+
+          h1{
+            margin-top:15px;
+            font-size:28px;
+          }
+
+          p{
+            margin:6px 0;
+            font-size:18px;
+          }
+
+        </style>
+
+      </head>
+
+      <body onload="window.print()">
+
+        <div class="label">
+
+          <img src="${qrImage}" />
+
+          <h1>
+            ${generatedQR.itemName}
+          </h1>
+
+          <p>
+            ${generatedQR.partNumber}
+          </p>
+
+          <p>
+            ${generatedQR.category}
+          </p>
+
+        </div>
+
+      </body>
+
+    </html>
+  `);
+
+  printWindow.document.close();
+
+}}
+    className="rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-6 py-4 font-black"
+  >
+
+    🖨 PRINT
+
+  </button>
+
+  {/* CANCEL */}
+  <button
+    onClick={() => {
+      setGeneratedQR(null);
+      setShowQRModal(false);
+    }}
+    className="rounded-2xl bg-zinc-800 px-6 py-4 font-black transition hover:bg-zinc-700"
+  >
+
+    ✖ CANCEL
+
+  </button>
+
+</div>
+
+        </div>
+
+      )}
 
     </div>
 
-  );
+  </div>
+
+)}
+
+{/* QR SCANNER MODAL */}
+{showScannerModal && (
+
+  <div className="fixed inset-0 z-[600] overflow-y-auto bg-black/90 p-4">
+
+    <div className="mx-auto my-10 w-full max-w-xl rounded-[32px] border border-zinc-800 bg-zinc-950 p-8">
+
+      {/* HEADER */}
+      <div className="mb-6 flex items-center justify-between">
+
+        <div>
+
+          <h2 className="text-3xl font-black">
+
+            Scan QR Code
+
+          </h2>
+
+          <p className="mt-2 text-zinc-400">
+
+            Point camera at QR label
+
+          </p>
+
+        </div>
+
+        <button
+          onClick={() => {
+            setShowScannerModal(false);
+            setScannedItem(null);
+          }}
+          className="rounded-2xl bg-zinc-800 px-4 py-3"
+        >
+
+          ✖
+
+        </button>
+
+      </div>
+
+      {/* CAMERA */}
+      {!scannedItem && (
+
+        <div className="overflow-hidden rounded-3xl border border-zinc-800">
+
+         <div
+  id="reader"
+  className="overflow-hidden rounded-3xl"
+/>
+
+        </div>
+
+      )}
+
+      {/* SCANNED RESULT */}
+      {scannedItem && (
+
+        <div className="mt-6 rounded-3xl border border-zinc-800 bg-black p-6">
+
+          <h3 className="text-2xl font-black">
+
+            {scannedItem.itemName}
+
+          </h3>
+
+          <p className="mt-2 text-zinc-400">
+
+            {scannedItem.partNumber}
+
+          </p>
+
+          <p className="text-zinc-400">
+
+            {scannedItem.category}
+
+          </p>
+
+          {/* ACTION */}
+          <div className="mt-6 grid grid-cols-2 gap-3">
+
+            <button
+              onClick={() =>
+                setScanAction("ADD")
+              }
+              className={`rounded-2xl px-5 py-4 font-black transition ${
+                scanAction === "ADD"
+                  ? "bg-green-500 text-black"
+                  : "bg-zinc-800"
+              }`}
+            >
+
+              ➕ ADD
+
+            </button>
+
+            <button
+              onClick={() =>
+                setScanAction(
+                  "DEDUCT"
+                )
+              }
+              className={`rounded-2xl px-5 py-4 font-black transition ${
+                scanAction ===
+                "DEDUCT"
+                  ? "bg-red-500 text-white"
+                  : "bg-zinc-800"
+              }`}
+            >
+
+              ➖ DEDUCT
+
+            </button>
+
+          </div>
+
+          {/* QUANTITY */}
+          <input
+            type="number"
+            min="1"
+            value={scanQuantity}
+            onChange={(e) =>
+              setScanQuantity(
+                Number(
+                  e.target.value
+                )
+              )
+            }
+            className="mt-5 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+          />
+
+          {/* CONFIRM */}
+          <button
+            onClick={() => {
+
+              const updated =
+                inventoryItems.map(
+                  (item) => {
+
+                    if (
+                      item.partNumber ===
+                      scannedItem.partNumber
+                    ) {
+
+                      return {
+
+                        ...item,
+
+                        stock:
+                          scanAction ===
+                          "ADD"
+
+                            ? item.stock +
+                              scanQuantity
+
+                            : item.stock -
+                              scanQuantity,
+
+                      };
+
+                    }
+
+                    return item;
+
+                  }
+                );
+
+              setInventoryItems(
+                updated
+              );
+
+              setAlertMessage(
+                `${scanAction} successful`
+              );
+
+              setShowAlertModal(
+                true
+              );
+
+              setScannedItem(null);
+
+              setScanAction("");
+
+              setScanQuantity(1);
+
+              setShowScannerModal(
+                false
+              );
+
+            }}
+            className="mt-6 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black"
+          >
+
+            CONFIRM UPDATE
+
+          </button>
+
+        </div>
+
+      )}
+
+    </div>
+
+  </div>
+
+)}
+
+</div>
+
+);
 
 }
