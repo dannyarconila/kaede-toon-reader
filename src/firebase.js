@@ -1,30 +1,33 @@
 import { initializeApp } from "firebase/app";
 
-import { 
-  getFirestore 
+import {
+  getFirestore,
 } from "firebase/firestore";
 
 import {
-  getAuth
+  getAuth,
 } from "firebase/auth";
 
 const firebaseConfig = {
+
   apiKey:
-    "AIzaSyCg0-gQ1_1btIkGGYW-HUOC_V_ugrDOBHQ",
+    "YOUR_API_KEY",
 
   authDomain:
-    "kaede-toon.firebaseapp.com",
+    "YOUR_PROJECT.firebaseapp.com",
 
-  projectId: "kaede-toon",
+  projectId:
+    "YOUR_PROJECT_ID",
 
   storageBucket:
-    "kaede-toon.firebasestorage.app",
+    "YOUR_PROJECT.appspot.com",
 
   messagingSenderId:
-    "10979639401",
+    "XXXX",
 
   appId:
-    "1:10979639401:web:d7321dabaf786cb073e2f8",
+    "XXXX"
+
 };
 
 const app =

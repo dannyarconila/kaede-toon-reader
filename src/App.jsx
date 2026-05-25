@@ -3,7 +3,24 @@ import React, {
   useEffect,
 } from "react";
 
-import { db } from "./firebase";
+import {
+
+  signInWithEmailAndPassword,
+
+  createUserWithEmailAndPassword,
+
+  onAuthStateChanged,
+
+  signOut,
+
+  updateProfile,
+
+} from "firebase/auth";
+
+import {
+  db,
+  auth,
+} from "./firebase";
 
 import {
   collection,
@@ -28,10 +45,7 @@ export default function App() {
   useState(false);
 
 const [isLoggedIn, setIsLoggedIn] =
-  useState(
-    localStorage.getItem("loggedIn") ===
-      "true"
-  );
+  useState(false);
 
 const [username, setUsername] =
   useState("");
@@ -138,6 +152,37 @@ const [scanAction, setScanAction] =
 
 const [scanQuantity, setScanQuantity] =
   useState(1);
+
+useEffect(() => {
+
+  const unsubscribe =
+    onAuthStateChanged(
+
+      auth,
+
+      (user) => {
+
+        if (user) {
+
+          setIsLoggedIn(true);
+
+          setProfileName(
+            user.displayName || ""
+          );
+
+        } else {
+
+          setIsLoggedIn(false);
+
+        }
+
+      }
+
+    );
+
+  return () => unsubscribe();
+
+}, []);
 
   // =========================
   // LOAD INVENTORY
@@ -328,64 +373,40 @@ const [scanQuantity, setScanQuantity] =
 
       {/* LOGIN */}
       <button
-        onClick={() => {
+        onClick={async () => {
 
-          const savedUser =
-            localStorage.getItem(
-              "user"
-            );
+         try {
 
-          if (!savedUser) {
+  const userCredential =
 
-           setAlertMessage(
-  "No account found. Please sign up first."
-);
+    await signInWithEmailAndPassword(
 
-setShowAlertModal(true);
+      auth,
 
-            return;
+      username,
 
-          }
+      password
 
-          const parsed =
-            JSON.parse(savedUser);
+    );
 
-          if (
+  setProfileName(
 
-  username.trim() ===
-    parsed.username.trim() &&
+    userCredential.user.displayName || ""
 
-  password.trim() ===
-    parsed.password.trim()
+  );
 
-)
-          
-          {
+  setIsLoggedIn(true);
 
-            localStorage.setItem(
-              "loggedIn",
-              "true"
-            );
+} catch (error) {
 
-            setProfileName(
-              parsed.name
-            );
+  setAlertMessage(
+    "Invalid email or password."
+  );
 
-            setProfilePosition(
-              parsed.position
-            );
+  setShowAlertModal(true);
 
-            setIsLoggedIn(true);
 
-            
-
-          } else {
-
-            setAlertMessage(
-  "Invalid username or password."
-);
-
-setShowAlertModal(true);
+        
 
           }
 
@@ -418,7 +439,7 @@ setShowAlertModal(true);
 {/* ALERT MODAL */}
 {showAlertModal && (
 
-  <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 p-4">
+  <div className="fixed inset-0 z-[9999] bg-black/80 p-4">
 
     <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
 
@@ -475,13 +496,13 @@ setShowAlertModal(true);
             <div className="flex gap-3">
 
               <button
-                onClick={() => {
+                onClick={async () => {
 
-                localStorage.removeItem(
-  "loggedIn"
-);
+                await signOut(auth);
 
-                  window.location.reload();
+setIsLoggedIn(false);
+
+setShowLogoutModal(false);
 
                 }}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-5 py-4 font-black transition hover:scale-[1.02]"
@@ -553,7 +574,7 @@ setShowAlertModal(true);
 
         <input
           type="text"
-          placeholder="Username"
+          placeholder="Email"
           value={signupUsername}
           onChange={(e) =>
             setSignupUsername(
@@ -580,73 +601,70 @@ setShowAlertModal(true);
       <div className="mt-6 flex gap-3">
 
         <button
-          onClick={() => {
+          onClick={async () => {
 
-           const userData = {
+          try {
 
-  name:
-    signupName.trim(),
+  const userCredential =
 
-  position:
-    signupPosition.trim(),
+    await createUserWithEmailAndPassword(
 
-  username:
-    signupUsername.trim(),
+      auth,
 
-  password:
-    signupPassword.trim(),
+      signupUsername,
 
-};
+      signupPassword
 
-            localStorage.setItem(
-              "user",
-              JSON.stringify(
-                userData
-              )
-            );
+    );
 
-            localStorage.setItem(
-  "loggedIn",
-  "true"
-);
+  await updateProfile(
 
-localStorage.setItem(
-  "profileName",
-  signupName
-);
+    userCredential.user,
 
-localStorage.setItem(
-  "profilePosition",
-  signupPosition
-);
+    {
 
-setProfileName(signupName);
+      displayName:
+        signupName,
 
-setProfilePosition(
-  signupPosition
-);
+    }
 
-setUsername(signupUsername);
+  );
 
-setPassword(signupPassword);
+  setProfileName(
+    signupName
+  );
 
-setIsLoggedIn(true);
+  setProfilePosition(
+    signupPosition
+  );
 
-           setIsLoggedIn(true);
+  setIsLoggedIn(true);
 
-setShowSignupModal(false);
+  setShowSignupModal(false);
 
-setSignupName("");
-setSignupPosition("");
-setSignupUsername("");
-setSignupPassword("");
+  setSignupName("");
 
-setAlertMessage(
-  "Account created successfully!"
-);
+  setSignupPosition("");
 
+  setSignupUsername("");
 
-setShowAlertModal(true);
+  setSignupPassword("");
+
+  setAlertMessage(
+    "Account created successfully!"
+  );
+
+  setShowAlertModal(true);
+
+} catch (error) {
+
+  setAlertMessage(
+    error.message
+  );
+
+  setShowAlertModal(true);
+
+}
 
 
           }}
@@ -1599,18 +1617,22 @@ setShowAlertModal(true);
     if (existingItem) {
 
      let newStock;
-
 if (scanAction === "ADD") {
 
   newStock =
-    existingItem.stock +
-    scanQuantity;
+
+    Number(existingItem.stock) +
+
+    Number(scanQuantity);
 
 } else {
 
   if (
-    scanQuantity >
-    existingItem.stock
+
+    Number(scanQuantity) >
+
+    Number(existingItem.stock)
+
   ) {
 
     setAlertMessage(
@@ -1624,24 +1646,26 @@ if (scanAction === "ADD") {
   }
 
   newStock =
-    existingItem.stock -
-    scanQuantity;
+
+    Number(existingItem.stock) -
+
+    Number(scanQuantity);
 
 }
 
       // UPDATE FIREBASE
-      await updateDoc(
-        doc(
-          db,
-          "inventory",
-          existingItem.id
-        ),
-        {
-          stock: newStock,
-        }
-      );
+     await updateDoc(
+  doc(
+    db,
+    "inventory",
+    existingItem.id
+  ),
+  {
+    stock: newStock,
+  }
+);
 
-    } else {
+} else {
 
       const newItem = {
 
@@ -1659,8 +1683,7 @@ if (scanAction === "ADD") {
             ? scanQuantity
             : 0,
 
-        image:
-          "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+      
 
       };
 
