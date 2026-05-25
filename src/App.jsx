@@ -7,7 +7,10 @@ import { db } from "./firebase";
 
 import {
   collection,
-  getDocs,
+  addDoc,
+  updateDoc,
+  doc,
+  onSnapshot,
 } from "firebase/firestore";
 
 import { QRCodeCanvas } from "qrcode.react";
@@ -141,91 +144,41 @@ const [scanQuantity, setScanQuantity] =
   // =========================
   useEffect(() => {
 
-    loadInventory();
+  const unsubscribe =
+    onSnapshot(
 
-  }, []);
+      collection(
+        db,
+        "inventory"
+      ),
 
-  const loadInventory = async () => {
+      (snapshot) => {
 
-    try {
+        const loaded = [];
 
-      const snapshot = await getDocs(
-        collection(db, "inventory")
-      );
+        snapshot.forEach((doc) => {
 
-      const loaded = [];
+          loaded.push({
 
-      snapshot.forEach((doc) => {
+            id: doc.id,
+            ...doc.data(),
 
-        loaded.push({
-          id: doc.id,
-          ...doc.data(),
+          });
+
         });
 
-      });
+        setInventoryItems(
+          loaded
+        );
 
-      setInventoryItems(loaded);
+      }
 
-    } catch (error) {
+    );
 
-      console.log(error);
+  return () => unsubscribe();
 
-      // SAMPLE DATA
-      setInventoryItems([
-        {
-          id: 1,
-          name: "6204 Bearing",
-          partNumber: "BRG-6204",
-          category: "Brewhouse/RMH",
-          stock: 15,
-          image:
-            "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
-        },
+}, []);
 
-        {
-          id: 2,
-          name: "Pressure Gauge",
-          partNumber: "PG-220",
-          category: "Filtration/Cellars",
-          stock: 4,
-          image:
-            "https://cdn-icons-png.flaticon.com/512/2933/2933245.png",
-        },
-
-        {
-          id: 3,
-          name: "Pump Coupling",
-          partNumber: "PMP-101",
-          category: "Eng'g PNS",
-          stock: 8,
-          image:
-            "https://cdn-icons-png.flaticon.com/512/3097/3097144.png",
-        },
-
-        {
-          id: 4,
-          name: "Water Valve",
-          partNumber: "WTP-505",
-          category: "WTP",
-          stock: 2,
-          image:
-            "https://cdn-icons-png.flaticon.com/512/296/296216.png",
-        },
-
-        {
-          id: 5,
-          name: "Waste Pump",
-          partNumber: "WWTP-900",
-          category: "WWTP",
-          stock: 11,
-          image:
-            "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
-        },
-      ]);
-
-    }
-
-  };
 
   // =========================
   // FILTER ITEMS
@@ -1096,30 +1049,15 @@ setShowAlertModal(true);
 
                       <td className="px-6 py-5">
 
-                        <div className="flex items-center gap-4">
+                       <div>
 
-                          <img
-                            src={item.image}
-                            className="h-16 w-16 rounded-2xl bg-white object-cover"
-                          />
+  <h3 className="text-lg font-bold">
 
-                          <div>
+    {item.name}
 
-                            <h3 className="text-lg font-bold">
+  </h3>
 
-                              {item.name}
-
-                            </h3>
-
-                            <p className="text-sm text-zinc-400">
-
-                              Inventory Item
-
-                            </p>
-
-                          </div>
-
-                        </div>
+</div>
 
                       </td>
 
@@ -1297,15 +1235,37 @@ setShowAlertModal(true);
 
       {/* GENERATE BUTTON */}
       <button
-        onClick={() => {
+       onClick={() => {
 
-          setGeneratedQR({
-            itemName: qrItemName,
-            category: qrCategory,
-            partNumber: qrPartNumber,
-          });
+  if (
 
-        }}
+    !qrItemName ||
+    !qrCategory ||
+    !qrPartNumber
+
+  ) {
+
+    setAlertMessage(
+      "Please complete all QR fields."
+    );
+
+    setShowAlertModal(true);
+
+    return;
+
+  }
+
+  setGeneratedQR({
+
+    itemName: qrItemName,
+
+    category: qrCategory,
+
+    partNumber: qrPartNumber,
+
+  });
+
+}}
         className="mt-6 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black transition hover:scale-[1.01]"
       >
 
@@ -1611,104 +1571,147 @@ setShowAlertModal(true);
 
           {/* CONFIRM */}
           <button
-            onClick={() => {
+           onClick={async () => {
 
-             const existingItem =
-  inventoryItems.find(
-    (item) =>
-      item.partNumber ===
-      scannedItem.partNumber
+            if (!scanAction) {
+
+  setAlertMessage(
+    "Please select ADD or DEDUCT."
   );
 
-let updated = [];
+  setShowAlertModal(true);
 
-if (existingItem) {
-
-  updated =
-    inventoryItems.map(
-      (item) => {
-
-        if (
-          item.partNumber ===
-          scannedItem.partNumber
-        ) {
-
-          return {
-
-            ...item,
-
-            stock:
-              scanAction ===
-              "ADD"
-
-                ? item.stock +
-                  scanQuantity
-
-                : item.stock -
-                  scanQuantity,
-
-          };
-
-        }
-
-        return item;
-
-      }
-    );
-
-} else {
-
-  const newItem = {
-
-    id: Date.now(),
-
-    name:
-      scannedItem.itemName,
-
-    partNumber:
-      scannedItem.partNumber,
-
-    category:
-      scannedItem.category,
-
-    stock:
-      scanAction === "ADD"
-        ? scanQuantity
-        : 0,
-
-    image:
-      "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
-
-  };
-
-  updated = [
-    ...inventoryItems,
-    newItem,
-  ];
+  return;
 
 }
 
-setInventoryItems(updated);
+  try {
 
-              setAlertMessage(
-                `${scanAction} successful`
-              );
+    const existingItem =
+      inventoryItems.find(
+        (item) =>
+          item.partNumber ===
+          scannedItem.partNumber
+      );
 
-              setShowAlertModal(
-                true
-              );
+    
 
-              setScannedItem(null);
+    if (existingItem) {
 
-              setScanAction("");
+     let newStock;
 
-              setScanQuantity(1);
+if (scanAction === "ADD") {
 
-              setShowScannerModal(
-                false
-              );
+  newStock =
+    existingItem.stock +
+    scanQuantity;
 
-            }}
+} else {
+
+  if (
+    scanQuantity >
+    existingItem.stock
+  ) {
+
+    setAlertMessage(
+      "Not enough stock available."
+    );
+
+    setShowAlertModal(true);
+
+    return;
+
+  }
+
+  newStock =
+    existingItem.stock -
+    scanQuantity;
+
+}
+
+      // UPDATE FIREBASE
+      await updateDoc(
+        doc(
+          db,
+          "inventory",
+          existingItem.id
+        ),
+        {
+          stock: newStock,
+        }
+      );
+
+    } else {
+
+      const newItem = {
+
+        name:
+          scannedItem.itemName,
+
+        partNumber:
+          scannedItem.partNumber,
+
+        category:
+          scannedItem.category,
+
+        stock:
+          scanAction === "ADD"
+            ? scanQuantity
+            : 0,
+
+        image:
+          "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+
+      };
+
+      // SAVE TO FIREBASE
+      await addDoc(
+        collection(
+          db,
+          "inventory"
+        ),
+        newItem
+      );
+
+    }
+
+    // RELOAD INVENTORY
+
+    setAlertMessage(
+      `${scanAction} successful`
+    );
+
+    setShowAlertModal(
+      true
+    );
+
+    setScannedItem(null);
+
+    setScanAction("");
+
+    setScanQuantity(1);
+
+    setShowScannerModal(
+      false
+    );
+
+  } catch (error) {
+
+    console.log(error);
+
+    setAlertMessage(
+      "Firebase update failed"
+    );
+
+    setShowAlertModal(
+      true
+    );
+
+  }
+
+}}
+
+          
             className="mt-6 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black"
           >
 
