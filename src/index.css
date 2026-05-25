@@ -1,1 +1,74 @@
 @import "tailwindcss";
+/* =========================
+   QR SCANNER CUSTOM UI
+========================= */
+
+#reader {
+  border: none !important;
+  background: transparent !important;
+}
+
+#reader__scan_region {
+  background: #000 !important;
+  border-radius: 28px !important;
+  overflow: hidden !important;
+}
+
+#reader__dashboard {
+  background: #09090b !important;
+  border-radius: 28px !important;
+  border: 1px solid #27272a !important;
+  padding: 20px !important;
+  color: white !important;
+}
+
+#reader__dashboard_section_csr button,
+#reader__dashboard_section_swaplink {
+  background: linear-gradient(
+    to right,
+    #ec4899,
+    #7c3aed
+  ) !important;
+
+  color: white !important;
+
+  border: none !important;
+
+  padding: 14px 22px !important;
+
+  border-radius: 18px !important;
+
+  font-weight: 900 !important;
+
+  margin-top: 12px !important;
+
+  cursor: pointer !important;
+
+  transition: 0.2s !important;
+}
+
+#reader__dashboard_section_csr button:hover,
+#reader__dashboard_section_swaplink:hover {
+  transform: scale(1.03);
+}
+
+#reader select {
+  width: 100% !important;
+
+  background: #18181b !important;
+
+  color: white !important;
+
+  border: 1px solid #3f3f46 !important;
+
+  border-radius: 18px !important;
+
+  padding: 14px !important;
+
+  margin-top: 10px !important;
+}
+
+#reader__dashboard_section_swaplink {
+  display: inline-block !important;
+  text-decoration: none !important;
+}
