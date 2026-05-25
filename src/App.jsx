@@ -28,6 +28,7 @@ import {
   updateDoc,
   doc,
   onSnapshot,
+  deleteDoc,
 } from "firebase/firestore";
 
 import { QRCodeCanvas } from "qrcode.react";
@@ -86,6 +87,18 @@ const [signupPassword, setSignupPassword] =
 
   const [showAlertModal, setShowAlertModal] =
   useState(false);
+
+  const [showEditModal, setShowEditModal] =
+  useState(false);
+
+const [selectedItem, setSelectedItem] =
+  useState(null);
+
+const [manualQuantity, setManualQuantity] =
+  useState(1);
+
+const [manualAction, setManualAction] =
+  useState("");
 
 const [alertMessage, setAlertMessage] =
   useState("");
@@ -260,9 +273,11 @@ useEffect(() => {
 
     useEffect(() => {
 
+  let scanner;
+
   if (showScannerModal) {
 
-    const scanner =
+    scanner =
       new Html5QrcodeScanner(
         "reader",
         {
@@ -279,13 +294,9 @@ useEffect(() => {
         try {
 
           const parsed =
-            JSON.parse(
-              decodedText
-            );
+            JSON.parse(decodedText);
 
-          setScannedItem(
-            parsed
-          );
+          setScannedItem(parsed);
 
           scanner.clear();
 
@@ -302,6 +313,16 @@ useEffect(() => {
     );
 
   }
+
+  return () => {
+
+    if (scanner) {
+
+      scanner.clear().catch(() => {});
+
+    }
+
+  };
 
 }, [showScannerModal]);
 
@@ -439,7 +460,7 @@ useEffect(() => {
 {/* ALERT MODAL */}
 {showAlertModal && (
 
-  <div className="fixed inset-0 z-[9999] bg-black/80 p-4">
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
 
     <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
 
@@ -1107,7 +1128,7 @@ setShowLogoutModal(false);
 
                       <td className="px-6 py-5">
 
-                        {item.stock <= 5 ? (
+                        {Number(item.stock) <= 5 ? (
 
                           <span className="rounded-xl bg-red-500/20 px-4 py-2 text-red-400">
 
@@ -1129,21 +1150,32 @@ setShowLogoutModal(false);
 
                       <td className="px-6 py-5">
 
-                        <div className="flex gap-3">
+                       <div className="flex items-center gap-3">
 
-                          <button className="rounded-xl bg-zinc-800 px-4 py-2 transition hover:bg-zinc-700">
+ <button
 
-                            👁
+  onClick={() => {
 
-                          </button>
+    setSelectedItem(item);
 
-                          <button className="rounded-xl bg-zinc-800 px-4 py-2 transition hover:bg-zinc-700">
+setManualAction("");
 
-                            ✏️
+setManualQuantity(1);
 
-                          </button>
+setShowEditModal(true);
 
-                        </div>
+  }}
+
+  className="rounded-xl bg-zinc-800 px-4 py-3 text-orange-400 transition hover:bg-zinc-700"
+>
+
+  ✏️
+
+</button>
+
+</div>
+
+                      
 
                       </td>
 
@@ -1162,6 +1194,285 @@ setShowLogoutModal(false);
 
 
           </main>
+
+          {/* EDIT INVENTORY MODAL */}
+{
+  showEditModal &&
+  selectedItem && (
+
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-6">
+
+      <div className="w-full max-w-md rounded-[32px] border border-zinc-800 bg-black p-8">
+
+        <h2 className="text-4xl font-black text-white">
+
+          Edit Item
+
+        </h2>
+
+        <div className="mt-6 space-y-2">
+
+          <h3 className="text-2xl font-bold text-white">
+
+            {selectedItem.name}
+
+          </h3>
+
+          <p className="text-zinc-400">
+
+            {selectedItem.partNumber}
+
+          </p>
+
+          <p className="text-zinc-400">
+
+            Current Stock:
+            {" "}
+            {selectedItem.stock}
+
+          </p>
+
+        </div>
+
+        {/* ACTIONS */}
+        <div className="mt-8 grid grid-cols-2 gap-4">
+
+          <button
+
+            onClick={() =>
+              setManualAction("ADD")
+            }
+
+            className={`rounded-2xl px-6 py-5 text-xl font-black transition ${
+              manualAction === "ADD"
+
+                ? "bg-green-500 text-black"
+
+                : "bg-zinc-800 text-white"
+            }`}
+          >
+
+            + ADD
+
+          </button>
+
+          <button
+
+            onClick={() =>
+              setManualAction("DEDUCT")
+            }
+
+            className={`rounded-2xl px-6 py-5 text-xl font-black transition ${
+              manualAction === "DEDUCT"
+
+                ? "bg-red-500 text-white"
+
+                : "bg-zinc-800 text-white"
+            }`}
+          >
+
+            - DEDUCT
+
+          </button>
+
+        </div>
+
+        {/* QUANTITY */}
+        <input
+          type="number"
+          value={manualQuantity}
+          onChange={(e) =>
+            setManualQuantity(
+              Number(e.target.value)
+            )
+          }
+          className="mt-6 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-2xl text-white outline-none"
+        />
+
+        {/* BUTTONS */}
+        <div className="mt-8 space-y-4">
+
+          {/* SAVE */}
+          <button
+
+            onClick={async () => {
+
+              try {
+
+                if (!manualAction) {
+
+  setAlertMessage(
+    "Please select ADD or DEDUCT."
+  );
+
+  setShowAlertModal(true);
+
+  return;
+
+}
+
+                let newStock =
+                  Number(
+                    selectedItem.stock
+                  );
+
+                if (
+                  manualAction ===
+                  "ADD"
+                ) {
+
+                  newStock +=
+                    Number(
+                      manualQuantity
+                    );
+
+                } else {
+
+                  if (
+                    manualQuantity >
+                    selectedItem.stock
+                  ) {
+
+                    setAlertMessage(
+                      "Not enough stock."
+                    );
+
+                    setShowAlertModal(
+                      true
+                    );
+
+                    return;
+
+                  }
+
+                  newStock -=
+                    Number(
+                      manualQuantity
+                    );
+
+                }
+
+                await updateDoc(
+
+                  doc(
+                    db,
+                    "inventory",
+                    selectedItem.id
+                  ),
+
+                  {
+                    stock: newStock,
+                  }
+
+                );
+
+                setAlertMessage(
+                  "Inventory updated"
+                );
+
+                setShowAlertModal(
+                  true
+                );
+
+                setShowEditModal(
+                  false
+                );
+
+              } catch (error) {
+
+                setAlertMessage(
+                  "Update failed"
+                );
+
+                setShowAlertModal(
+                  true
+                );
+
+              }
+
+            }}
+
+            className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-6 py-5 text-xl font-black text-white"
+          >
+
+            SAVE CHANGES
+
+          </button>
+
+          {/* DELETE */}
+          <button
+
+            onClick={async () => {
+
+              try {
+
+                await deleteDoc(
+
+                  doc(
+                    db,
+                    "inventory",
+                    selectedItem.id
+                  )
+
+                );
+
+                setAlertMessage(
+                  "Item deleted"
+                );
+
+                setShowAlertModal(
+                  true
+                );
+
+                setShowEditModal(
+                  false
+                );
+
+              } catch (error) {
+
+                setAlertMessage(
+                  "Delete failed"
+                );
+
+                setShowAlertModal(
+                  true
+                );
+
+              }
+
+            }}
+
+            className="w-full rounded-2xl bg-red-500 px-6 py-5 text-xl font-black text-white"
+          >
+
+            DELETE ITEM
+
+          </button>
+
+          {/* CANCEL */}
+          <button
+
+            onClick={() =>
+              setShowEditModal(
+                false
+              )
+            }
+
+            className="w-full rounded-2xl bg-zinc-800 px-6 py-5 text-xl font-black text-white"
+          >
+
+            CANCEL
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  )
+}
 
       </>
 
@@ -1485,9 +1796,16 @@ setShowLogoutModal(false);
 
         <button
           onClick={() => {
-            setShowScannerModal(false);
-            setScannedItem(null);
-          }}
+
+  setShowScannerModal(false);
+
+  setScannedItem(null);
+
+  setScanAction("");
+
+  setScanQuantity(1);
+
+}}
           className="rounded-2xl bg-zinc-800 px-4 py-3"
         >
 
@@ -1704,23 +2022,23 @@ setShowLogoutModal(false);
 
     // RELOAD INVENTORY
 
-    setAlertMessage(
-      `${scanAction} successful`
-    );
+   setScannedItem(null);
 
-    setShowAlertModal(
-      true
-    );
+setScanAction("");
 
-    setScannedItem(null);
+setScanQuantity(1);
 
-    setScanAction("");
+setShowScannerModal(false);
 
-    setScanQuantity(1);
+setTimeout(() => {
 
-    setShowScannerModal(
-      false
-    );
+  setAlertMessage(
+    `${scanAction} successful`
+  );
+
+  setShowAlertModal(true);
+
+}, 300);
 
   } catch (error) {
 
