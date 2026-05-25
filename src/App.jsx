@@ -1614,89 +1614,93 @@ setShowLogoutModal(false);
 
     
 
-    if (existingItem) {
+   if (existingItem) {
 
-     let newStock;
-if (scanAction === "ADD") {
+  let newStock;
 
-  newStock =
+  if (scanAction === "ADD") {
 
-    Number(existingItem.stock) +
+    newStock =
 
-    Number(scanQuantity);
+      Number(existingItem.stock) +
 
-} else {
+      Number(scanQuantity);
 
-  if (
+  } else {
 
-    Number(scanQuantity) >
+    if (
 
-    Number(existingItem.stock)
+      Number(scanQuantity) >
 
-  ) {
+      Number(existingItem.stock)
 
-    setAlertMessage(
-      "Not enough stock available."
-    );
+    ) {
 
-    setShowAlertModal(true);
-
-    return;
-
-  }
-
-  newStock =
-
-    Number(existingItem.stock) -
-
-    Number(scanQuantity);
-
-}
-
-      // UPDATE FIREBASE
-     await updateDoc(
-  doc(
-    db,
-    "inventory",
-    existingItem.id
-  ),
-  {
-    stock: newStock,
-  }
-);
-
-} else {
-
-      const newItem = {
-
-        name:
-          scannedItem.itemName,
-
-        partNumber:
-          scannedItem.partNumber,
-
-        category:
-          scannedItem.category,
-
-        stock:
-          scanAction === "ADD"
-            ? scanQuantity
-            : 0,
-
-      
-
-      };
-
-      // SAVE TO FIREBASE
-      await addDoc(
-        collection(
-          db,
-          "inventory"
-        ),
-        newItem
+      setAlertMessage(
+        "Not enough stock available."
       );
 
+      setShowAlertModal(true);
+
+      return;
+
     }
+
+    newStock =
+
+      Number(existingItem.stock) -
+
+      Number(scanQuantity);
+
+  }
+
+  // UPDATE EXISTING FIREBASE DOC
+  await updateDoc(
+
+    doc(
+      db,
+      "inventory",
+      existingItem.id
+    ),
+
+    {
+      stock: newStock,
+    }
+
+  );
+
+} else {
+
+  // CREATE NEW ITEM ONLY IF NOT EXIST
+
+  const newItem = {
+
+    name:
+      scannedItem.itemName,
+
+    partNumber:
+      scannedItem.partNumber,
+
+    category:
+      scannedItem.category,
+
+    stock:
+      Number(scanQuantity),
+
+  };
+
+  await addDoc(
+
+    collection(
+      db,
+      "inventory"
+    ),
+
+    newItem
+
+  );
+
+}
 
     // RELOAD INVENTORY
 
