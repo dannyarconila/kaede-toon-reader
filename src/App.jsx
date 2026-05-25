@@ -34,6 +34,10 @@ import {
 import { QRCodeCanvas } from "qrcode.react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
+import * as XLSX from "xlsx";
+
+import { saveAs } from "file-saver";
+
 export default function App() {
 
   // =========================
@@ -165,6 +169,69 @@ const [scanAction, setScanAction] =
 
 const [scanQuantity, setScanQuantity] =
   useState(1);
+
+const exportInventory = () => {
+
+  const data =
+    inventoryItems.map(
+      (item) => ({
+
+        ITEM: item.name,
+
+        "PART NUMBER":
+          item.partNumber,
+
+        CATEGORY:
+          item.category,
+
+        STOCK:
+          item.stock,
+
+      })
+    );
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      data
+    );
+
+  const workbook =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+
+    workbook,
+
+    worksheet,
+
+    "Inventory"
+
+  );
+
+  const excelBuffer =
+    XLSX.write(workbook, {
+
+      bookType: "xlsx",
+
+      type: "array",
+
+    });
+
+  const fileData =
+    new Blob(
+      [excelBuffer],
+      {
+        type:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }
+    );
+
+  saveAs(
+    fileData,
+    "brewery_inventory.xlsx"
+  );
+
+};
 
 useEffect(() => {
 
@@ -910,7 +977,7 @@ setShowLogoutModal(false);
       <main className="px-4 py-6">
 
         {/* ACTION CARDS */}
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
 
           {/* SCAN */}
 <div
@@ -986,6 +1053,40 @@ setShowLogoutModal(false);
             </div>
 
           </div>
+          {/* EXPORT */}
+<div
+  onClick={exportInventory}
+  className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-green-500/20 to-emerald-500/10 p-8 transition hover:border-green-500 hover:scale-[1.01]"
+>
+
+  <div className="flex items-center justify-between">
+
+    <div>
+
+      <h2 className="text-3xl font-black">
+
+        Export Inventory
+
+      </h2>
+
+      <p className="mt-3 text-zinc-300">
+
+        Download realtime inventory
+        as Excel file.
+
+      </p>
+
+    </div>
+
+    <div className="text-6xl">
+
+      📥
+
+    </div>
+
+  </div>
+
+</div>
 
         </div>
 
@@ -1082,7 +1183,7 @@ setShowLogoutModal(false);
                   (item, index) => (
 
                     <tr
-                      key={index}
+                      key={item.id}
                       className="border-b border-zinc-800 transition hover:bg-zinc-900"
                     >
 
