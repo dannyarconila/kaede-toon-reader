@@ -884,7 +884,7 @@ setShowAlertModal(true);
                   true
                 )
               }
-              className="hidden lg:block rounded-2xl-600 px-6 py-4 font-black text-white shadow-lg shadow-red-500/20 transition hover:scale-[1.02] md:block"
+             className="hidden rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-6 py-4 font-black text-white shadow-lg shadow-red-500/20 transition hover:scale-[1.02] lg:block"
             >
 
               🚪 Logout
@@ -1613,41 +1613,82 @@ setShowAlertModal(true);
           <button
             onClick={() => {
 
-              const updated =
-                inventoryItems.map(
-                  (item) => {
+             const existingItem =
+  inventoryItems.find(
+    (item) =>
+      item.partNumber ===
+      scannedItem.partNumber
+  );
 
-                    if (
-                      item.partNumber ===
-                      scannedItem.partNumber
-                    ) {
+let updated = [];
 
-                      return {
+if (existingItem) {
 
-                        ...item,
+  updated =
+    inventoryItems.map(
+      (item) => {
 
-                        stock:
-                          scanAction ===
-                          "ADD"
+        if (
+          item.partNumber ===
+          scannedItem.partNumber
+        ) {
 
-                            ? item.stock +
-                              scanQuantity
+          return {
 
-                            : item.stock -
-                              scanQuantity,
+            ...item,
 
-                      };
+            stock:
+              scanAction ===
+              "ADD"
 
-                    }
+                ? item.stock +
+                  scanQuantity
 
-                    return item;
+                : item.stock -
+                  scanQuantity,
 
-                  }
-                );
+          };
 
-              setInventoryItems(
-                updated
-              );
+        }
+
+        return item;
+
+      }
+    );
+
+} else {
+
+  const newItem = {
+
+    id: Date.now(),
+
+    name:
+      scannedItem.itemName,
+
+    partNumber:
+      scannedItem.partNumber,
+
+    category:
+      scannedItem.category,
+
+    stock:
+      scanAction === "ADD"
+        ? scanQuantity
+        : 0,
+
+    image:
+      "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+
+  };
+
+  updated = [
+    ...inventoryItems,
+    newItem,
+  ];
+
+}
+
+setInventoryItems(updated);
 
               setAlertMessage(
                 `${scanAction} successful`
