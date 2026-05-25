@@ -740,7 +740,7 @@ setShowAlertModal(true);
             className="absolute inset-0 bg-black/70"
           />
 
-          <div className="relative z-50 h-full w-[280px] border-r border-zinc-800 bg-zinc-950 p-6">
+         <div className="relative z-50 flex h-screen w-[280px] flex-col border-r border-zinc-800 bg-zinc-950 p-6">
 
             <h2 className="mb-8 text-3xl font-black">
 
@@ -748,7 +748,7 @@ setShowAlertModal(true);
 
             </h2>
 
-            <div className="space-y-4">
+            <div className="flex h-full flex-col">
 
               {/* DASHBOARD */}
               <button
@@ -771,25 +771,29 @@ setShowAlertModal(true);
 
               {/* PROFILE */}
 <button
-  className="w-full rounded-2xl bg-zinc-900 px-5 py-4 text-left text-lg font-bold transition hover:bg-zinc-800"
+  className="mt-4 w-full rounded-2xl bg-zinc-900 px-5 py-4 text-left text-lg font-bold transition hover:bg-zinc-800"
 >
-
-  {/* LOGOUT */}
-<button
-  onClick={() => {
-    setSidebarOpen(false);
-    setShowLogoutModal(true);
-  }}
-  className="w-full rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-5 py-4 text-left text-lg font-black text-white transition hover:scale-[1.02]"
->
-
-  🚪 Logout
-
-</button>
 
   👤 {profileName || "User"}
 
 </button>
+
+{/* PUSH LOGOUT TO BOTTOM */}
+<div className="mt-auto pt-6">
+
+  <button
+    onClick={() => {
+      setSidebarOpen(false);
+      setShowLogoutModal(true);
+    }}
+    className="w-full rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-5 py-4 text-left text-lg font-black text-white transition hover:scale-[1.02]"
+  >
+
+    🚪 Logout
+
+  </button>
+
+</div>
 
             </div>
 
@@ -880,7 +884,7 @@ setShowAlertModal(true);
                   true
                 )
               }
-              className="hidden rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-6 py-4 font-black text-white shadow-lg shadow-red-500/20 transition hover:scale-[1.02] md:block"
+              className="hidden lg:block rounded-2xl-600 px-6 py-4 font-black text-white shadow-lg shadow-red-500/20 transition hover:scale-[1.02] md:block"
             >
 
               🚪 Logout
@@ -1674,6 +1678,8 @@ setShowAlertModal(true);
         </div>
 
       )}
+
+  
 
     </div>
 
