@@ -770,10 +770,22 @@ setShowAlertModal(true);
               </button>
 
               {/* PROFILE */}
-              {/* PROFILE */}
 <button
   className="w-full rounded-2xl bg-zinc-900 px-5 py-4 text-left text-lg font-bold transition hover:bg-zinc-800"
 >
+
+  {/* LOGOUT */}
+<button
+  onClick={() => {
+    setSidebarOpen(false);
+    setShowLogoutModal(true);
+  }}
+  className="w-full rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 px-5 py-4 text-left text-lg font-black text-white transition hover:scale-[1.02]"
+>
+
+  🚪 Logout
+
+</button>
 
   👤 {profileName || "User"}
 
