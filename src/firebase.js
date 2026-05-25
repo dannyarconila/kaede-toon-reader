@@ -11,22 +11,22 @@ import {
 const firebaseConfig = {
 
   apiKey:
-    "YOUR_API_KEY",
+    "AIzaSyCg0-gQ1_1btIkGGYW-HUOC_V_ugrDOBHQ",
 
   authDomain:
-    "YOUR_PROJECT.firebaseapp.com",
+    "kaede-toon.firebaseapp.com",
 
   projectId:
-    "YOUR_PROJECT_ID",
+    "kaede-toon",
 
   storageBucket:
-    "YOUR_PROJECT.appspot.com",
+    "kaede-toon.firebasestorage.app",
 
   messagingSenderId:
-    "XXXX",
+    "10979639401",
 
   appId:
-    "XXXX"
+    "1:10979639401:web:d7321dabaf786cb073e2f8"
 
 };
 
