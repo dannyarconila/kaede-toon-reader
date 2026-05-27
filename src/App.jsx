@@ -1164,7 +1164,7 @@ setShowLogoutModal(false);
         </div>
 
         {/* IMPORT */}
-<div className="md:col-span-2">
+<div className="mt-5 max-w-2xl">
 
   <label
     className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8 transition hover:border-cyan-500 hover:scale-[1.01] block"
@@ -1372,7 +1372,7 @@ setShowLogoutModal(false);
 
 <td className="px-6 py-5">
 
-  {Number(item.stock) <= 5 ? (
+  {Number(item.stock) <= 2 ? (
 
     <span className="rounded-xl bg-red-500/20 px-4 py-2 text-red-400">
 
