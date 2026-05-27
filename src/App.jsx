@@ -1206,53 +1206,7 @@ setShowLogoutModal(false);
 
 </div>
 
-        {/* CATEGORIES */}
-        <div className="mt-10">
-
-          <h2 className="mb-5 text-3xl font-black">
-
-            Categories
-
-          </h2>
-
-          <div className="flex gap-4 overflow-x-auto pb-3">
-
-            {categories.map((cat) => (
-
-              <button
-                key={cat.id}
-                onClick={() =>
-                  setSelectedCategory(
-                    cat.name
-                  )
-                }
-                className={`min-w-[220px] rounded-[28px] border p-6 text-left transition ${
-                  selectedCategory ===
-                  cat.name
-                    ? "border-pink-500 bg-pink-500/10"
-                    : "border-zinc-800 bg-zinc-900"
-                }`}
-              >
-
-                <div className="text-5xl">
-
-                  {cat.icon}
-
-                </div>
-
-                <h3 className="mt-5 text-2xl font-bold">
-
-                  {cat.name}
-
-                </h3>
-
-              </button>
-
-            ))}
-
-          </div>
-
-        </div>
+        
 
         {/* TABLE */}
         <div className="mt-10 overflow-hidden rounded-[32px] border border-zinc-800 bg-zinc-950">
