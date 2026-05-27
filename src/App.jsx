@@ -95,6 +95,27 @@ const [signupPassword, setSignupPassword] =
   const [showEditModal, setShowEditModal] =
   useState(false);
 
+const [showAddModal, setShowAddModal] =
+  useState(false);
+
+const [newArea, setNewArea] =
+  useState("");
+
+const [newCategory, setNewCategory] =
+  useState("");
+
+const [newEquipment, setNewEquipment] =
+  useState("");
+
+const [newItemName, setNewItemName] =
+  useState("");
+
+const [newPartNumber, setNewPartNumber] =
+  useState("");
+
+const [newStock, setNewStock] =
+  useState("");
+
 const [selectedItem, setSelectedItem] =
   useState(null);
 
@@ -1420,6 +1441,15 @@ setShowLogoutModal(false);
                        <div className="flex items-center gap-3">
 
  <button
+  onClick={() => {
+    setShowAddModal(true);
+  }}
+  className="rounded-xl bg-green-500/20 px-4 py-3 text-green-400 transition hover:bg-green-500/30"
+>
+  ➕
+</button>
+
+<button
 
   onClick={() => {
 
@@ -1783,6 +1813,158 @@ setShowEditModal(true);
 
 )}
 
+{/* ADD ITEM MODAL */}
+{showAddModal && (
+
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
+
+    <div className="w-full max-w-lg rounded-[32px] border border-zinc-800 bg-zinc-950 p-8">
+
+      <h2 className="mb-6 text-3xl font-black">
+        Add New Item
+      </h2>
+
+      <div className="space-y-4">
+
+        <input
+          type="text"
+          placeholder="Area"
+          value={newArea}
+          onChange={(e) =>
+            setNewArea(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Category"
+          value={newCategory}
+          onChange={(e) =>
+            setNewCategory(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Equipment"
+          value={newEquipment}
+          onChange={(e) =>
+            setNewEquipment(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Item"
+          value={newItemName}
+          onChange={(e) =>
+            setNewItemName(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="text"
+          placeholder="Part Number"
+          value={newPartNumber}
+          onChange={(e) =>
+            setNewPartNumber(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+        <input
+          type="number"
+          placeholder="Stock"
+          value={newStock}
+          onChange={(e) =>
+            setNewStock(e.target.value)
+          }
+          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
+        />
+
+      </div>
+
+      <div className="mt-6 flex gap-3">
+
+        <button
+          onClick={async () => {
+
+            try {
+
+              await addDoc(
+                collection(db, "inventory"),
+                {
+                  area: newArea,
+                  category: newCategory,
+                  equipment: newEquipment,
+                  name: newItemName,
+                  partNumber: newPartNumber,
+                  stock: Number(newStock),
+
+                  technician:
+                    profileName,
+
+                  transactionDate:
+                    new Date().toLocaleString(),
+                }
+              );
+
+              setAlertMessage(
+                "New item added successfully."
+              );
+
+              setShowAlertModal(true);
+
+              setShowAddModal(false);
+
+              setNewArea("");
+              setNewCategory("");
+              setNewEquipment("");
+              setNewItemName("");
+              setNewPartNumber("");
+              setNewStock("");
+
+            } catch (error) {
+
+              setAlertMessage(
+                "Add item failed."
+              );
+
+              setShowAlertModal(true);
+
+            }
+
+          }}
+          className="flex-1 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 font-black"
+        >
+
+          ADD ITEM
+
+        </button>
+
+        <button
+          onClick={() =>
+            setShowAddModal(false)
+          }
+          className="rounded-2xl bg-zinc-800 px-5 py-4 font-bold"
+        >
+
+          Cancel
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
+
 {/* QR GENERATOR MODAL */}
 {showQRModal && (
 
@@ -1823,45 +2005,7 @@ setShowEditModal(true);
 
       </div>
 
-  
 
-      {/* GENERATE BUTTON */}
-      <button
-       onClick={() => {
-
-  setGeneratedQR(
-  generatedQR
-);
-
-{
-
-    setAlertMessage(
-      "Please complete all QR fields."
-    );
-
-    setShowAlertModal(true);
-
-    return;
-
-  }
-
-  setGeneratedQR({
-
-    itemName: qrItemName,
-
-    category: qrCategory,
-
-    partNumber: qrPartNumber,
-
-  });
-
-}}
-        className="mt-6 w-full rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 px-5 py-4 font-black transition hover:scale-[1.01]"
-      >
-
-        GENERATE QR CODE
-
-      </button>
 
       {/* QR RESULT */}
       {generatedQR && (
