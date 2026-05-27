@@ -1164,7 +1164,8 @@ setShowLogoutModal(false);
         </div>
 
         {/* IMPORT */}
-<div className="rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8">
+<div 
+className="md:col-span-2 rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8">
 
   <label className="cursor-pointer">
 
