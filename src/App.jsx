@@ -99,8 +99,7 @@ const [selectedItem, setSelectedItem] =
   useState(null);
 
 const [manualQuantity, setManualQuantity] =
-  useState(1);
-
+  useState("");
 const [manualAction, setManualAction] =
   useState("");
 
@@ -170,25 +169,114 @@ const [scanAction, setScanAction] =
 const [scanQuantity, setScanQuantity] =
   useState(1);
 
-const exportInventory = () => {
+const handleImportExcel = async (e) => {
 
-  const data =
-    inventoryItems.map(
-      (item) => ({
+  try {
 
-        ITEM: item.name,
+    const file = e.target.files[0];
 
-        "PART NUMBER":
-          item.partNumber,
+    if (!file) return;
 
-        CATEGORY:
-          item.category,
+    const data =
+      await file.arrayBuffer();
 
-        STOCK:
-          item.stock,
+    const workbook =
+  XLSX.read(data);
 
-      })
+const sheetName =
+  workbook.SheetNames.find(
+    (name) => name === "INV"
+  );
+
+const sheet =
+  workbook.Sheets[sheetName];
+
+    const jsonData =
+  XLSX.utils.sheet_to_json(sheet, {
+    defval: "",
+  });
+
+  await Promise.all(
+  inventoryItems.map((item) =>
+    deleteDoc(
+      doc(db, "inventory", item.id)
+    )
+  )
+);
+
+    for (const row of jsonData) {
+      console.log(row);
+
+      const item = {
+  area:
+    String(row.AREA || "").trim(),
+
+  category:
+    String(row.CATEGORY || "").trim(),
+
+  equipment:
+    String(row.EQUIPMENT || "").trim(),
+
+  name:
+    String(row.ITEM || "").trim(),
+
+  partNumber:
+    String(row["PART NUMBER"] || "").trim(),
+
+  stock:
+    Number(row.INSTALLED) || 0,
+
+  technician:
+    "",
+
+  transactionDate:
+    "",
+};
+      if (
+  item.area ||
+  item.category ||
+  item.equipment ||
+  item.name ||
+  item.partNumber
+)
+         {
+
+  await addDoc(
+    collection(
+      db,
+      "inventory"
+    ),
+    item
+  );
+
+}
+
+    }
+
+    setAlertMessage(
+      "Excel imported successfully!"
     );
+
+    setShowAlertModal(true);
+
+  } catch (error) {
+
+    console.log(error);
+
+    setAlertMessage(
+      "Excel import failed."
+    );
+
+    setShowAlertModal(true);
+
+  }
+
+};
+
+const exportInventory = () => {
+  
+
+  
 
   const worksheet =
     XLSX.utils.json_to_sheet(
@@ -1016,43 +1104,7 @@ setShowLogoutModal(false);
 
           </div>
 
-          {/* GENERATE */}
-<div
-  onClick={() => {
-    setShowQRModal(true);
-    setGeneratedQR(null);
-  }}
-  className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-violet-500/20 to-purple-500/10 p-8 transition hover:border-violet-500 hover:scale-[1.01]"
->
-
-            <div className="flex items-center justify-between">
-
-              <div>
-
-                <h2 className="text-3xl font-black">
-
-                  Generate QR
-
-                </h2>
-
-                <p className="mt-3 text-zinc-300">
-
-                  Generate printable QR
-                  labels for inventory items.
-
-                </p>
-
-              </div>
-
-              <div className="text-6xl">
-
-                🧾
-
-              </div>
-
-            </div>
-
-          </div>
+         
           {/* EXPORT */}
 <div
   onClick={exportInventory}
@@ -1089,6 +1141,49 @@ setShowLogoutModal(false);
 </div>
 
         </div>
+
+        {/* IMPORT */}
+<div className="rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8">
+
+  <label className="cursor-pointer">
+
+    <input
+      type="file"
+      accept=".xlsx,.xls"
+      className="hidden"
+      onChange={handleImportExcel}
+    />
+
+    <div className="flex items-center justify-between">
+
+      <div>
+
+        <h2 className="text-3xl font-black">
+
+          Import Excel
+
+        </h2>
+
+        <p className="mt-3 text-zinc-300">
+
+          Upload inventory Excel file
+          automatically.
+
+        </p>
+
+      </div>
+
+      <div className="text-6xl">
+
+        📤
+
+      </div>
+
+    </div>
+
+  </label>
+
+</div>
 
         {/* CATEGORIES */}
         <div className="mt-10">
@@ -1150,6 +1245,18 @@ setShowLogoutModal(false);
                 <tr className="text-left text-zinc-400">
 
                   <th className="px-6 py-5">
+  AREA
+</th>
+
+<th className="px-6 py-5">
+  CATEGORY
+</th>
+
+<th className="px-6 py-5">
+  EQUIPMENT
+</th>
+
+                  <th className="px-6 py-5">
                     ITEM
                   </th>
 
@@ -1158,16 +1265,20 @@ setShowLogoutModal(false);
                   </th>
 
                   <th className="px-6 py-5">
-                    CATEGORY
-                  </th>
+  STOCK
+</th>
 
-                  <th className="px-6 py-5">
-                    STOCK
-                  </th>
+<th className="px-6 py-5">
+  TECHNICIAN
+</th>
 
-                  <th className="px-6 py-5">
-                    STATUS
-                  </th>
+<th className="px-6 py-5">
+  DATE
+</th>
+
+<th className="px-6 py-5">
+  STATUS
+</th>
 
                   <th className="px-6 py-5">
                     ACTION
@@ -1187,57 +1298,112 @@ setShowLogoutModal(false);
                       className="border-b border-zinc-800 transition hover:bg-zinc-900"
                     >
 
-                      <td className="px-6 py-5">
+                     
 
-                       <div>
+{/* AREA */}
+<td className="px-6 py-5">
 
-  <h3 className="text-lg font-bold">
+  <span className="text-zinc-300">
 
-    {item.name}
+    {item.area || "-"}
 
-  </h3>
+  </span>
 
-</div>
+</td>
 
-                      </td>
+{/* CATEGORY */}
+<td className="px-6 py-5">
 
-                      <td className="px-6 py-5">
+  <span className="rounded-xl bg-orange-500/20 px-4 py-2 text-orange-400">
 
-                        {item.partNumber}
+    {item.category || "-"}
 
-                      </td>
+  </span>
 
-                      <td className="px-6 py-5">
+</td>
 
-                        <span className="rounded-xl bg-orange-500/20 px-4 py-2 text-orange-400">
+{/* EQUIPMENT */}
+<td className="px-6 py-5">
 
-                          {item.category}
+  <span className="text-zinc-300">
 
-                        </span>
+    {item.equipment || "-"}
 
-                      </td>
+  </span>
 
-                      <td className="px-6 py-5">
+</td>
 
-                        <span className="font-bold text-green-400">
+{/* ITEM */}
+<td className="px-6 py-5">
 
-                          {item.stock} pcs
+  <div>
 
-                        </span>
+    <h3 className="text-lg font-bold">
 
-                      </td>
+      {item.name}
 
-                      <td className="px-6 py-5">
+    </h3>
 
-                        {Number(item.stock) <= 5 ? (
+  </div>
 
-                          <span className="rounded-xl bg-red-500/20 px-4 py-2 text-red-400">
+</td>
 
-                            Low Stock
+{/* PART NUMBER */}
+<td className="px-6 py-5">
 
-                          </span>
+  <span className="text-zinc-300">
 
-                        ) : (
+    {item.partNumber || "-"}
+
+  </span>
+
+</td>
+
+{/* STOCK */}
+<td className="px-6 py-5">
+
+  <span className="font-bold text-green-400">
+
+    {item.stock} pcs
+
+  </span>
+
+</td>
+
+
+{/* TECHNICIAN */}
+<td className="px-6 py-5">
+
+  <span className="text-zinc-300">
+
+    {item.technician || "-"}
+
+  </span>
+
+</td>
+
+{/* DATE */}
+<td className="px-6 py-5">
+
+  <span className="text-zinc-300">
+
+    {item.transactionDate || "-"}
+
+  </span>
+
+</td>
+
+<td className="px-6 py-5">
+
+  {Number(item.stock) <= 5 ? (
+
+    <span className="rounded-xl bg-red-500/20 px-4 py-2 text-red-400">
+
+      Low Stock
+
+    </span>
+
+  ) : (
 
                           <span className="rounded-xl bg-green-500/20 px-4 py-2 text-green-400">
 
@@ -1261,7 +1427,7 @@ setShowLogoutModal(false);
 
 setManualAction("");
 
-setManualQuantity(1);
+setManualQuantity("");
 
 setShowEditModal(true);
 
@@ -1271,6 +1437,35 @@ setShowEditModal(true);
 >
 
   ✏️
+
+</button>
+
+<button
+
+  onClick={() => {
+
+    setGeneratedQR({
+
+      itemName:
+        item.name,
+
+      category:
+        item.category,
+
+      partNumber:
+        item.partNumber,
+
+    });
+
+    setShowQRModal(true);
+
+  }}
+
+  className="rounded-xl bg-violet-500/20 px-4 py-3 text-violet-400 transition hover:bg-violet-500/30"
+
+>
+
+  🧾
 
 </button>
 
@@ -1381,12 +1576,16 @@ setShowEditModal(true);
         {/* QUANTITY */}
         <input
           type="number"
+          min="0"
           value={manualQuantity}
-          onChange={(e) =>
-            setManualQuantity(
-              Number(e.target.value)
-            )
-          }
+          onChange={(e) => {
+  const value = Math.max(
+    0,
+    Number(e.target.value)
+  );
+
+  setManualQuantity(value);
+}}
           className="mt-6 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-2xl text-white outline-none"
         />
 
@@ -1455,17 +1654,22 @@ setShowEditModal(true);
 
                 await updateDoc(
 
-                  doc(
-                    db,
-                    "inventory",
-                    selectedItem.id
-                  ),
+  doc(
+    db,
+    "inventory",
+    selectedItem.id
+  ),
 
-                  {
-                    stock: newStock,
-                  }
+  {
+    stock: newStock,
 
-                );
+    technician: profileName,
+
+    transactionDate:
+      new Date().toLocaleString(),
+  }
+
+);
 
                 setAlertMessage(
                   "Inventory updated"
@@ -1619,61 +1823,17 @@ setShowEditModal(true);
 
       </div>
 
-      {/* INPUTS */}
-      <div className="space-y-4">
-
-        {/* ITEM NAME */}
-        <input
-          type="text"
-          placeholder="Item Name"
-          value={qrItemName}
-          onChange={(e) =>
-            setQrItemName(
-              e.target.value
-            )
-          }
-          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
-        />
-
-        {/* CATEGORY */}
-        <input
-          type="text"
-          placeholder="Category"
-          value={qrCategory}
-          onChange={(e) =>
-            setQrCategory(
-              e.target.value
-            )
-          }
-          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
-        />
-
-        {/* PART NUMBER */}
-        <input
-          type="text"
-          placeholder="Part Number"
-          value={qrPartNumber}
-          onChange={(e) =>
-            setQrPartNumber(
-              e.target.value
-            )
-          }
-          className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none transition focus:border-pink-500"
-        />
-
-      </div>
+  
 
       {/* GENERATE BUTTON */}
       <button
        onClick={() => {
 
-  if (
+  setGeneratedQR(
+  generatedQR
+);
 
-    !qrItemName ||
-    !qrCategory ||
-    !qrPartNumber
-
-  ) {
+{
 
     setAlertMessage(
       "Please complete all QR fields."
@@ -2074,20 +2234,24 @@ setShowEditModal(true);
   }
 
   // UPDATE EXISTING FIREBASE DOC
-  await updateDoc(
+ await updateDoc(
 
-    doc(
-      db,
-      "inventory",
-      existingItem.id
-    ),
+  doc(
+    db,
+    "inventory",
+    existingItem.id
+  ),
 
-    {
-      stock: newStock,
-    }
+  {
+    stock: newStock,
 
-  );
+    technician: profileName,
 
+    transactionDate:
+      new Date().toLocaleString(),
+  }
+
+);
 } else {
 
   // CREATE NEW ITEM ONLY IF NOT EXIST
