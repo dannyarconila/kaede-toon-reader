@@ -1164,10 +1164,11 @@ setShowLogoutModal(false);
         </div>
 
         {/* IMPORT */}
-<div 
-className="md:col-span-2 rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8">
+<div className="md:col-span-2">
 
-  <label className="cursor-pointer">
+  <label
+    className="cursor-pointer rounded-[32px] border border-zinc-800 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-8 transition hover:border-cyan-500 hover:scale-[1.01] block"
+  >
 
     <input
       type="file"
