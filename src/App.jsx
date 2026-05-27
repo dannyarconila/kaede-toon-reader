@@ -295,35 +295,51 @@ const sheet =
 };
 
 const exportInventory = () => {
-  
 
-  
+  const exportData =
+    inventoryItems.map((item) => ({
+
+      AREA: item.area || "",
+
+      CATEGORY:
+        item.category || "",
+
+      EQUIPMENT:
+        item.equipment || "",
+
+      ITEM: item.name || "",
+
+      "PART NUMBER":
+        item.partNumber || "",
+
+      STOCK: item.stock || 0,
+
+      TECHNICIAN:
+        item.technician || "",
+
+      DATE:
+        item.transactionDate || "",
+
+    }));
 
   const worksheet =
     XLSX.utils.json_to_sheet(
-      data
+      exportData
     );
 
   const workbook =
     XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(
-
     workbook,
-
     worksheet,
-
     "Inventory"
-
   );
 
   const excelBuffer =
     XLSX.write(workbook, {
-
       bookType: "xlsx",
-
       type: "array",
-
     });
 
   const fileData =
