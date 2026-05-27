@@ -188,7 +188,7 @@ const [scanAction, setScanAction] =
   useState("");
 
 const [scanQuantity, setScanQuantity] =
-  useState(1);
+  useState("");
 
 const handleImportExcel = async (e) => {
 
@@ -2164,7 +2164,7 @@ setShowEditModal(true);
 
   setScanAction("");
 
-  setScanQuantity(1);
+  setScanQuantity("");
 
 }}
           className="rounded-2xl bg-zinc-800 px-4 py-3"
@@ -2254,15 +2254,16 @@ setShowEditModal(true);
           {/* QUANTITY */}
           <input
             type="number"
-            min="1"
+            min="0"
             value={scanQuantity}
-            onChange={(e) =>
-              setScanQuantity(
-                Number(
-                  e.target.value
-                )
-              )
-            }
+            onChange={(e) => {
+  const value = Math.max(
+    0,
+    Number(e.target.value)
+  );
+
+  setScanQuantity(value);
+}}
             className="mt-5 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-white outline-none"
           />
 
